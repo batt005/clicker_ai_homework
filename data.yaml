@@ -1,0 +1,6 @@
+path: ./
+train: images/train
+val: images/val
+
+nc: 4
+names: ['close_ad', 'game', 'upgrade', 'upgrade_locked']

@@ -1,0 +1,7 @@
+runs/
+*.cache
+screenshots/
+screenshots_augmented/
+__pycache__/
+.venv*/
+debug.png
