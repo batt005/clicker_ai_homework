@@ -9,6 +9,12 @@ runs/*
 !runs/detect/
 runs/detect/*
 !runs/detect/cookie_detector-4/
+runs/detect/cookie_detector-4/*
+!runs/detect/cookie_detector-4/results.png
+!runs/detect/cookie_detector-4/confusion_matrix.png
+!runs/detect/cookie_detector-4/weights/
+runs/detect/cookie_detector-4/weights/*
+!runs/detect/cookie_detector-4/weights/best.pt
 
 __pycache__/
 .venv*/
