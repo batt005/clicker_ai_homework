@@ -1,29 +1,28 @@
 import pyautogui, cv2, numpy as np, time, os, keyboard
 from ultralytics import YOLO
 
-# ---------- настройки ----------
-UPGRADE_COOLDOWN = 2.5   # секунд между покупками улучшений
-CLICK_BURST = 1.0        # сколько секунд подряд кликать по доллару между распознаваниями
-CLICK_INTERVAL = 0.01    # пауза между кликами (0 = максимально быстро)
+
+UPGRADE_COOLDOWN = 2.5
+CLICK_BURST = 1.0
+CLICK_INTERVAL = 0.01
 
 DETECT_CONF = 0.25
-CARD_MIN = 0.3           # минимум уверенности, чтобы считать объект карточкой
+CARD_MIN = 0.3
 AD_MIN, GAME_MIN = 0.5, 0.6
-WHITE_LEVEL = 235        # пиксель считается белым, если все каналы >= этого значения
-WHITE_RATIO_MIN = 0.01   # доля белых пикселей, с которой карточка считается доступной (1%)
+WHITE_LEVEL = 235
+WHITE_RATIO_MIN = 0.01
 MODEL_PATH = 'runs/detect/cookie_detector-4/weights/best.pt'
-# --------------------------------
 
-# ---------- аварийный выход ----------
-pyautogui.FAILSAFE = True    # мышь в левый верхний угол -> остановка
-pyautogui.PAUSE = 0          # убираем встроенную паузу 0.1 с после каждого действия
+
+pyautogui.FAILSAFE = True
+pyautogui.PAUSE = 0
 
 def emergency_exit():
     print('\nАварийная остановка (пробел)')
     os._exit(0)
 
 keyboard.add_hotkey('space', emergency_exit)
-# --------------------------------------
+
 
 model = YOLO(MODEL_PATH)
 print(model.names)
@@ -61,12 +60,12 @@ def get_cards(img, objs):
     cards = []
     for o in cand:
         if any(iou(o['box'], c['box']) > 0.5 for c in cards):
-            continue                      # та же карточка, второй класс
+            continue
         x1, y1, x2, y2 = [max(int(v), 0) for v in o['box']]
         crop = img[y1:y2, x1:x2]
         if crop.size == 0:
             continue
-        # у доступных карточек текст чисто белый, у недоступных затемнён
+
         white = float((crop.min(axis=2) >= WHITE_LEVEL).mean())
         cards.append({**o, 'white': white, 'active': white >= WHITE_RATIO_MIN})
     return sorted(cards, key=lambda c: c['box'][1])
@@ -113,23 +112,23 @@ def main():
         cards = get_cards(img, objs)
         last['img'], last['cards'], last['objs'] = img, cards, objs
 
-        # 1. реклама
+    
         ads = [o for o in objs if o['name'] == 'close_ad' and o['conf'] >= AD_MIN]
         if ads:
             pyautogui.click(*center(max(ads, key=lambda o: o['conf'])['box']))
             time.sleep(0.5)
             continue
 
-        # 2. покупка самой дорогой доступной карточки, не чаще раза в UPGRADE_COOLDOWN секунд
+       
         active = [c for c in cards if c['active']]
         if active and time.time() - last_buy_time >= UPGRADE_COOLDOWN:
-            target = active[-1]           # нижняя = самая дорогая из доступных
+            target = active[-1]
             pyautogui.click(*center(target['box']))
             last_buy_time = time.time()
             print('Покупка:', [int(v) for v in center(target['box'])],
                   f"белых={target['white']*100:.1f}%")
 
-        # 3. доллар: быстрая серия кликов
+
         games = [o for o in objs if o['name'] == 'game' and o['conf'] >= GAME_MIN]
         if games:
             x, y = center(max(games, key=lambda o: o['conf'])['box'])
