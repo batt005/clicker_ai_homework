@@ -1,7 +1,15 @@
-runs/
+images/
+labels/
 *.cache
 screenshots/
-screenshots_augmented/
+
+yolov8n.pt
+
+runs/*
+!runs/detect/
+runs/detect/*
+!runs/detect/cookie_detector-4/
+
 __pycache__/
 .venv*/
 debug.png

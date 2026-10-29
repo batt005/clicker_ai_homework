@@ -2,21 +2,23 @@ import pyautogui, cv2, numpy as np, time, os, keyboard
 from ultralytics import YOLO
 
 # ---------- аварийный выход ----------
-pyautogui.FAILSAFE = True
+pyautogui.FAILSAFE = True 
+
 def emergency_exit():
-    print('\nАварийная остановка (F8)')
+    print('\nАварийная остановка (пробел)')
     os._exit(0)
-keyboard.add_hotkey('f8', emergency_exit)
+
+keyboard.add_hotkey('space', emergency_exit)
 # --------------------------------------
 
-MODEL_PATH = 'runs/detect/cookie_detector/weights/best.pt'   # поправьте на свежую папку
+MODEL_PATH = 'runs/detect/cookie_detector-4/weights/best.pt'
 model = YOLO(MODEL_PATH)
 print(model.names)
 
 DETECT_CONF = 0.25
-CARD_MIN = 0.4          # минимум уверенности, чтобы считать объект карточкой
+CARD_MIN = 0.4 
 AD_MIN, GAME_MIN = 0.5, 0.6
-ACTIVE_SCORE = 235      # порог яркости: карточка доступна, если score >= этого значения
+ACTIVE_SCORE = 235  
 
 last = {'img': None, 'cards': []}
 
@@ -34,7 +36,9 @@ def detect():
     objs = []
     for b in res.boxes:
         x1, y1, x2, y2 = b.xyxy[0].tolist()
-        objs.append({'name': model.names[int(b.cls[0])], 'box': (x1, y1, x2, y2), 'conf': float(b.conf[0])})
+        objs.append({'name': model.names[int(b.cls[0])],
+                     'box': (x1, y1, x2, y2),
+                     'conf': float(b.conf[0])})
     return img, objs
 
 def center(box):
@@ -42,18 +46,19 @@ def center(box):
 
 def get_cards(img, objs):
     """Все карточки магазина (любой из двух классов) + яркость каждой."""
-    cand = [o for o in objs if o['name'] in ('upgrade', 'upgrade_locked') and o['conf'] >= CARD_MIN]
+    cand = [o for o in objs
+            if o['name'] in ('upgrade', 'upgrade_locked') and o['conf'] >= CARD_MIN]
     cand.sort(key=lambda o: -o['conf'])
     cards = []
     for o in cand:
         if any(iou(o['box'], c['box']) > 0.5 for c in cards):
-            continue                                   # та же карточка, второй класс
+            continue 
         x1, y1, x2, y2 = [max(int(v), 0) for v in o['box']]
         crop = img[y1:y2, x1:x2]
         if crop.size == 0:
             continue
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-        score = float(np.percentile(gray, 95))        # у доступных ярко-белый текст
+        score = float(np.percentile(gray, 95))
         cards.append({**o, 'score': score, 'active': score >= ACTIVE_SCORE})
     return sorted(cards, key=lambda c: c['box'][1])
 
@@ -66,15 +71,16 @@ def debug_dump():
         x1, y1, x2, y2 = [int(v) for v in c['box']]
         color = (0, 255, 0) if c['active'] else (0, 0, 255)
         cv2.rectangle(img, (x1, y1), (x2, y2), color, 4)
-        cv2.putText(img, f"{c['name']} {c['conf']:.2f} s={c['score']:.0f}", (x1, y1 - 8),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 2)
+        cv2.putText(img, f"{c['name']} {c['conf']:.2f} s={c['score']:.0f}",
+                    (x1, y1 - 8), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 2)
         print(f"{c['name']:15} conf={c['conf']:.2f} score={c['score']:.0f} active={c['active']}")
     cv2.imwrite('debug.png', img)
     print('Сохранено: debug.png (зелёные - будет покупать, красные - пропустит)')
-keyboard.add_hotkey('f9', debug_dump)   # F9 = показать, что бот видит
+
+keyboard.add_hotkey('f9', debug_dump)  
 
 def main():
-    print('F8 - аварийный выход, F9 - отладка (debug.png и таблица карточек)')
+    print('ПРОБЕЛ - аварийный выход, F9 - отладка (debug.png и таблица карточек)')
     while True:
         img, objs = detect()
         cards = get_cards(img, objs)
@@ -87,14 +93,15 @@ def main():
             time.sleep(0.5)
             continue
 
-        # 2. самая дорогая из доступных карточек
+        
         active = [c for c in cards if c['active']]
         if active:
-            target = active[-1]                       # нижняя = самая дорогая из доступных
+            target = active[-1]
             pyautogui.click(*center(target['box']))
-            print('Покупка:', [int(v) for v in center(target['box'])], f"score={target['score']:.0f}")
+            print('Покупка:', [int(v) for v in center(target['box'])],
+                  f"score={target['score']:.0f}")
             time.sleep(0.4)
-            continue                                  # новый скриншот, цены и баланс изменились
+            continue
 
         # 3. доллар
         games = [o for o in objs if o['name'] == 'game' and o['conf'] >= GAME_MIN]
