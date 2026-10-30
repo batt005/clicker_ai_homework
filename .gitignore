@@ -2,6 +2,7 @@ images/
 labels/
 *.cache
 screenshots/
+app1.py
 
 yolov8n.pt
 
@@ -19,3 +20,8 @@ runs/detect/cookie_detector-4/weights/*
 __pycache__/
 .venv*/
 debug.png
+
+ptToOnnx.py
+train.py
+data.yaml
+class.txt

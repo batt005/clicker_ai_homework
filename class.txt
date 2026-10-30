@@ -1,4 +1,0 @@
-close_ad
-game
-upgrade
-upgrade_locked
